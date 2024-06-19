@@ -4,6 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using ClamAvApi.Models;
+using ClamAvApi.Helper;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
@@ -57,23 +60,17 @@ app.MapPost("/scan-directory", async (ScanRequest request) =>
 
     await process.WaitForExitAsync();
 
-    var scanResult = new ScanResult
+    var output = outputBuilder.ToString();
+    var errors = errorBuilder.ToString();
+
+    var parsedResult = ClamAVParser.ParseClamAVOutput(output, errors, process.ExitCode);
+
+    var jsonOptions = new JsonSerializerOptions
     {
-        Output = outputBuilder.ToString(),
-        Errors = errorBuilder.ToString(),
-        ExitCode = process.ExitCode
+        WriteIndented = true
     };
 
-    return Results.Ok(scanResult);
+    return Results.Json(parsedResult, jsonOptions);
 });
 
 app.Run();
-
-public record ScanRequest(string Directory);
-
-public record ScanResult
-{
-    public required string Output { get; set; }
-    public required string Errors { get; set; }
-    public int ExitCode { get; set; }
-}

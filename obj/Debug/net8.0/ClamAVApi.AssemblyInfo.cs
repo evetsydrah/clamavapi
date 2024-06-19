@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ClamAVApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dba6c084f8539eddc4b4e5043459adc4c8c0f7b9")]
 [assembly: System.Reflection.AssemblyProductAttribute("ClamAVApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ClamAVApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
