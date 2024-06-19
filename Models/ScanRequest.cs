@@ -1,4 +1,4 @@
 namespace ClamAvApi.Models
 {
-    public record ScanRequest(string Directory);
+    public record ScanRequest(string Path, bool IsDirectory);
 }

@@ -16,23 +16,25 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.MapPost("/scan-directory", async (ScanRequest request) =>
+app.MapPost("/scan", async (ScanRequest request) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Directory))
+    if (string.IsNullOrWhiteSpace(request.Path))
     {
-        return Results.BadRequest("A valid directory path is required.");
+        return Results.BadRequest("A valid path is required.");
     }
 
-    var fullPath = Path.GetFullPath(Path.Combine("/data", request.Directory));
+    var fullPath = Path.GetFullPath(Path.Combine("/data", request.Path));
     if (!fullPath.StartsWith("/data"))
     {
-        return Results.BadRequest("Invalid directory path.");
+        return Results.BadRequest("Invalid path.");
     }
+
+    string arguments = request.IsDirectory ? $"-r {fullPath}" : fullPath;
 
     var processInfo = new ProcessStartInfo
     {
         FileName = "clamscan",
-        Arguments = $"-r {fullPath}",
+        Arguments = arguments,
         RedirectStandardOutput = true,
         RedirectStandardError = true,
         UseShellExecute = false,

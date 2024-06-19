@@ -30,27 +30,43 @@ To build and run the Docker container, follow these steps:
 
 ## API Endpoints
 ### Scan Directory
-- URL: /scan-directory
+- URL: /scan
 
 - Method: POST
 
 - Content-Type: application/json
 
-- Request Body:
+- Request Body for Directory:
     ```json
     {
-        "directory": "/data"
+        "Path": "/data",
+        "IsDirectory": true
     }
     ```
-    The directory field specifies the path to the directory to be scanned. This path should be within the /data directory, which is mapped from the host machine.
+- Request Body for file
+    ```json
+    {
+        "Path": "/data/file1.txt",
+        "IsDirectory": false
+    }
+    ```
+    The Path field specifies the path to the directory or file to be scanned. This path should be within the /data directory, which is mapped from the host machine. The IsDirectory field specifies whether the path is a directory or a single file.
 
 
 ### Example Request
 To test the endpoint, you can use `curl`:
+
+#### For Directory:
 ```
-curl -X POST "http://localhost:8080/scan-directory" \
+curl -X POST "http://localhost:8080/scan" \
      -H "Content-Type: application/json" \
-     -d "{\"directory\":\"/data\"}"
+     -d "{\"Path\":\"/data\",  \"IsDirectory\":true}"
+```
+#### For Single File:
+```
+curl -X POST "http://localhost:8080/scan" \
+     -H "Content-Type: application/json" \
+     -d "{\"Path\":\"/data/file1.txt\", \"IsDirectory\":false}"
 ```
 
 ## Expected Response
@@ -72,8 +88,8 @@ The response includes both the plain text output of the ClamAV scan and a struct
         - Returns 1, if virus is detected. 
         - Returns 0, if virus is not detected. 
 
-    Response Examples:
-    - No Virus Detected:
+Response Examples:
+- No Virus Detected:
 ```
     {
         "Outputs": {
@@ -103,7 +119,9 @@ The response includes both the plain text output of the ClamAV scan and a struct
     }
 ```
 
-    - Virus Detected:
+
+- Virus Detected:
+
 
 ```
     {
