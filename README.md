@@ -162,7 +162,44 @@ dotnet build
 ```
 
 ### Running the Application
-To run the application locally without Docker:
+If you prefer to run the application without Docker:
+
+1. Ensure ClamAV is installed and running.
+
+For Ubuntu/Debian:
+```sh
+sudo apt-get update
+sudo apt-get install clamav clamav-daemon
+sudo freshclam
+```
+
+Start the ClamAV Daemon
+```sh
+sudo systemctl start clamav-daemon
+```
+
+2. Build the project.
+
+```sh
+dotnet build
+```
+3. Run the application.
+
 ```sh
 dotnet run
+```
+
+If you are running the application locally without Docker, use the following commands instead:
+
+#### For Directory:
+```
+curl -X POST "http://localhost:5093/scan" \
+     -H "Content-Type: application/json" \
+     -d "{\"Path\":\"/data\",  \"IsDirectory\":true}"
+```
+#### For Single File:
+```
+curl -X POST "http://localhost:5093/scan" \
+     -H "Content-Type: application/json" \
+     -d "{\"Path\":\"/data/file1.txt\", \"IsDirectory\":false}"
 ```
