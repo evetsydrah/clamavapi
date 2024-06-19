@@ -23,9 +23,9 @@ To build and run the Docker container, follow these steps:
     ```
 2. **Build the Docker container**
     ```sh
-    docker run -d -p 8080:8080 -v /path/on/host:/data --name clamav-api clamav-api
+    docker run -d -p 8080:8080 -v /path/to/scan/on/host:/data --name clamav-api clamav-api
     ```
-    Replace /path/on/host with the actual directory on your host machine that you want to scan.
+    Replace /path/to/scan/on/hostt with the actual directory on your host machine that you want to scan.
 
 
 ## API Endpoints
