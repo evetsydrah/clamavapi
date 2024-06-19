@@ -92,7 +92,9 @@ The response includes both the plain text output of the ClamAV scan and a struct
         }
         ```
     - **Errors:** Any errors encountered during the scan.
-    - **ExitCode:** The exit code from the ClamAV command.
+    - **ExitCode:** The exit code from the ClamAV command. 
+        - Returns 1, if virus is detected. 
+        - Returns 0, if virus is not detected. 
 
 ## Development and Testing
 ### Building the Project
