@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "9XQ4/rUiz6lERzqNuPM5cdQ/hcrLlTRMTZNkOGPue6o=",
+  "Source": "ClamAVApi",
+  "BasePath": "_content/ClamAVApi",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
