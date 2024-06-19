@@ -67,6 +67,30 @@ The response includes both the plain text output of the ClamAV scan and a struct
 ```
 - **Fields**:
     - **Output:** The raw output from the ClamAV scan, including any updates and scan results.
+    Example:
+        ```
+        {
+            /data/6.1-MB-scaled-1.jpg:Zone.Identifier: OK
+            /data/file_example_JPG_10.1MB-scaled-1.jpg: OK
+            /data/file_example_JPG_10.1MB-scaled-1.jpg:Zone.Identifier: OK
+            /data/SampleDOCFile_5MB.doc: OK
+            /data/6.1-MB-scaled-1.jpg: OK
+            /data/SampleDOCFile_5MB.doc:Zone.Identifier: OK
+            /data/file2.txt: OK
+            /data/file1.txt: OK
+            ----------- SCAN SUMMARY -----------
+            Known viruses: 8694977
+            Engine version: 1.0.3
+            Scanned directories: 1
+            Scanned files: 8
+            Infected files: 0
+            Data scanned: 17.36 MB
+            Data read: 6.67 MB (ratio 2.60:1)
+            Time: 12.885 sec (0 m 12 s)
+            Start Date: 2024:06:19 14:03:39
+            End Date:   2024:06:19 14:03:51
+        }
+        ```
     - **Errors:** Any errors encountered during the scan.
     - **ExitCode:** The exit code from the ClamAV command.
 
