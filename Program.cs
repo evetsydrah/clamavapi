@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using ClamAvApi.Models;
 using ClamAvApi.Helper;
 using System.Text.Json;
+using BenchmarkDotNet.Running;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
@@ -18,12 +19,17 @@ app.UseSwaggerUI();
 
 app.MapPost("/scan", async (ScanRequest request) =>
 {
-    var scanResult = await ScanPath(request.Path, request.IsDirectory, true);
-    return Results.Json(scanResult, new JsonSerializerOptions { WriteIndented = true });
+    return await ScanPath(request.Path, request.IsDirectory, true);
 });
 
 if (args.Length > 0)
 {
+    if (args[0] == "--benchmark")
+    {
+        BenchmarkRunner.Run<ClamAVBenchmark>();
+        return;
+    }
+
     string path = args[0];
     bool isDirectory = Directory.Exists(path);
     var scanResult = await ScanPath(path, isDirectory, false);

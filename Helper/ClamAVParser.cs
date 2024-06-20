@@ -1,4 +1,6 @@
 using ClamAvApi.Models;
+using System;
+using System.Collections.Generic;
 
 namespace ClamAvApi.Helper
 {

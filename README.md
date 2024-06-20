@@ -186,7 +186,7 @@ dotnet build
 3. Run the application.
 
 ```sh
-dotnet run
+dotnet run <filepath/directory>
 ```
 
 If you are running the application locally without Docker, use the following commands instead:
@@ -202,4 +202,21 @@ curl -X POST "http://localhost:5093/scan" \
 curl -X POST "http://localhost:5093/scan" \
      -H "Content-Type: application/json" \
      -d "{\"Path\":\"/data/file1.txt\", \"IsDirectory\":false}"
+```
+
+# Benchmark
+
+## Running Benchmarks
+To run benchmarks that compare scanning an entire directory versus scanning each file individually, follow these steps:
+
+Ensure the directory structure to be scanned is mounted properly:
+
+```scss
+mountFiles/
+├── files/ (contains 9 files)
+└── files2/ (contains 17 files)
+```
+```sh
+dotnet build -c Release
+dotnet run -c Release -- --benchmark
 ```
