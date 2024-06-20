@@ -1,7 +1,10 @@
 # ClamAV API
 
 This project provides an API for running ClamAV virus scans on a specified directory. The API is built using ASP.NET Core and runs inside a Docker container. The ClamAV command-line tool is used to perform the virus scans.
-
+To clone the project:
+```sh
+git clone git@github.com:kevwu-creatingbugs/clamavapi.git
+```
 ## Project Structure
 
 - **Program.cs**: Defines the API endpoints and logic for running ClamAV scans.
@@ -204,8 +207,8 @@ curl -X POST "http://localhost:5093/scan" \
      -d "{\"Path\":\"/data/file1.txt\", \"IsDirectory\":false}"
 ```
 
-# Benchmark
 
+# Benchmark
 ## Running Benchmarks
 To run benchmarks that compare scanning an entire directory versus scanning each file individually, follow these steps:
 
