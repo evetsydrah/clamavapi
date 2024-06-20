@@ -18,18 +18,36 @@ app.UseSwaggerUI();
 
 app.MapPost("/scan", async (ScanRequest request) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Path))
+    var scanResult = await ScanPath(request.Path, request.IsDirectory, true);
+    return Results.Json(scanResult, new JsonSerializerOptions { WriteIndented = true });
+});
+
+if (args.Length > 0)
+{
+    string path = args[0];
+    bool isDirectory = Directory.Exists(path);
+    var scanResult = await ScanPath(path, isDirectory, false);
+    Console.WriteLine(JsonSerializer.Serialize(scanResult, new JsonSerializerOptions { WriteIndented = true }));
+}
+else
+{
+    app.Run();
+}
+
+static async Task<ScanResult> ScanPath(string path, bool isDirectory, bool fromApi)
+{
+    if (string.IsNullOrWhiteSpace(path))
     {
-        return Results.BadRequest("A valid path is required.");
+        return new ScanResult { Errors = "A valid path is required.", ExitCode = 1 };
     }
 
-    var fullPath = Path.GetFullPath(Path.Combine("/data", request.Path));
-    if (!fullPath.StartsWith("/data"))
+    var fullPath = fromApi ? Path.GetFullPath(Path.Combine("/data", path)) : path;
+    if (fromApi && !fullPath.StartsWith("/data"))
     {
-        return Results.BadRequest("Invalid path.");
+        return new ScanResult { Errors = "Invalid path.", ExitCode = 1 };
     }
 
-    string arguments = request.IsDirectory ? $"-r {fullPath}" : fullPath;
+    string arguments = isDirectory ? $"-r {fullPath}" : fullPath;
 
     var processInfo = new ProcessStartInfo
     {
@@ -67,12 +85,5 @@ app.MapPost("/scan", async (ScanRequest request) =>
 
     var parsedResult = ClamAVParser.ParseClamAVOutput(output, errors, process.ExitCode);
 
-    var jsonOptions = new JsonSerializerOptions
-    {
-        WriteIndented = true
-    };
-
-    return Results.Json(parsedResult, jsonOptions);
-});
-
-app.Run();
+    return parsedResult;
+}
