@@ -1,95 +1,28 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System.Diagnostics;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using ClamAvApi.Models;
-using ClamAvApi.Helper;
-using System.Text.Json;
-using BenchmarkDotNet.Running;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 var app = builder.Build();
-app.UseSwagger();
-app.UseSwaggerUI();
 
-app.MapPost("/scan", async (ScanRequest request) =>
+app.MapGet("/scan", (string filePath) =>
 {
-    return await ScanPath(request.Path, request.IsDirectory, true);
-});
-
-if (args.Length > 0)
-{
-    if (args[0] == "--benchmark")
+    var processInfo = new ProcessStartInfo("clamdscan", filePath)
     {
-        BenchmarkRunner.Run<ClamAVBenchmark>();
-        return;
-    }
-
-    string path = args[0];
-    bool isDirectory = Directory.Exists(path);
-    var scanResult = await ScanPath(path, isDirectory, false);
-    Console.WriteLine(JsonSerializer.Serialize(scanResult, new JsonSerializerOptions { WriteIndented = true }));
-}
-else
-{
-    app.Run();
-}
-
-static async Task<ScanResult> ScanPath(string path, bool isDirectory, bool fromApi)
-{
-    if (string.IsNullOrWhiteSpace(path))
-    {
-        return new ScanResult { Errors = "A valid path is required.", ExitCode = 1 };
-    }
-
-    var fullPath = fromApi ? Path.GetFullPath(Path.Combine("/data", path)) : path;
-    if (fromApi && !fullPath.StartsWith("/data"))
-    {
-        return new ScanResult { Errors = "Invalid path.", ExitCode = 1 };
-    }
-
-    string arguments = isDirectory ? $"-r {fullPath}" : fullPath;
-
-    var processInfo = new ProcessStartInfo
-    {
-        FileName = "clamscan",
-        Arguments = arguments,
         RedirectStandardOutput = true,
         RedirectStandardError = true,
         UseShellExecute = false,
         CreateNoWindow = true
     };
 
-    var process = new Process { StartInfo = processInfo };
-    process.Start();
+    using var process = Process.Start(processInfo);
+    if (process == null) return Results.Problem("Failed to start clamdscan process.");
 
-    var outputBuilder = new StringBuilder();
-    var errorBuilder = new StringBuilder();
-    using (var outputReader = process.StandardOutput)
-    using (var errorReader = process.StandardError)
-    {
-        while (!outputReader.EndOfStream)
-        {
-            outputBuilder.AppendLine(await outputReader.ReadLineAsync());
-        }
+    var output = process.StandardOutput.ReadToEnd();
+    process.WaitForExit();
 
-        while (!errorReader.EndOfStream)
-        {
-            errorBuilder.AppendLine(await errorReader.ReadLineAsync());
-        }
-    }
+    return Results.Ok(output);
+});
 
-    await process.WaitForExitAsync();
-
-    var output = outputBuilder.ToString();
-    var errors = errorBuilder.ToString();
-
-    var parsedResult = ClamAVParser.ParseClamAVOutput(output, errors, process.ExitCode);
-
-    return parsedResult;
-}
+app.Run();
