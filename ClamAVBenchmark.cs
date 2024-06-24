@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 public class ClamAVBenchmark
 {
-    private const string DirectoryPath = "/data";
+    private const string DirectoryPath = "/home/kevinwu/spikes/ClamAVApi/mountFiles"; // replace this with relative path of directory you want to run benchmark tests on  
 
     [Benchmark]
     public async Task ScanEntireDirectory()

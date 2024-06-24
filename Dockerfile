@@ -35,4 +35,4 @@ RUN mkdir -p /var/lib/clamav /var/run/clamav /var/log/clamav && \
 RUN freshclam
 
 # Override the entrypoint to start ClamAV and then the .NET application
-CMD ["sh", "-c", "freshclam && clamd & dotnet /app/ClamAVApi.dll"]
+CMD ["sh", "-c", "freshclam && clamd & dotnet /app/ClamAVApi.dll $0 $@ --"]

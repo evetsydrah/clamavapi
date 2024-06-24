@@ -42,9 +42,13 @@ To build and run the Docker container, follow these steps:
     ```
 2. **Build the Docker container**
     ```sh
-    docker run -d -p 8080:8080 -v /path/to/scan/on/host:/data --name clamav-container clamav-api
+    docker run -d -p 8080:5000 -v /path/to/scan/on/host:/data --name clamav-container clamav-api
     ```
-    Replace /path/to/scan/on/host with the actual directory on your host machine that you want to scan.
+    Replace **/path/to/scan/on/host** with the actual directory on your host machine that you want to scan.
+
+
+### Note: 
+When you run the docker container, you will need to **wait a minute** for the initialisation of the daemon before running the `curl` commands to test the endpoint.
 
 
 ## API Endpoints
@@ -55,7 +59,7 @@ To build and run the Docker container, follow these steps:
 filePath: The path to the file or directory to be scanned within the `/data` directory. Here the `/data` directory is the directory inside the container with the mounted files. 
 
 ### Example Request
-To test the endpoint, you can use `curl`:
+**To test the endpoint**, you can use `curl`:
 
 #### For Directory:
 ```sh
@@ -154,7 +158,7 @@ dotnet build
 ```
 
 ### Running the Application
-If you prefer to run the application without Docker:
+If you prefer to run the application **without Docker**:
 
 1. Ensure ClamAV is installed and running.
 
@@ -181,23 +185,12 @@ dotnet build
 dotnet run
 ```
 
-## Example Requests for Local Run
-
-#### For Directory:
-```sh
-curl "http://localhost:5093/scan?filePath=/data"
-```
-#### For Single File:
-```sh
-curl "http://localhost:5093/scan?filePath=/data/file1.txt"
-```
-
 
 # Benchmark
 ## Running Benchmarks
 To run benchmarks that compare scanning an entire directory versus scanning each file individually, follow these steps:
 
-Ensure the directory structure to be scanned is mounted properly:
+Ensure to set the `var DirectoryPath` in `ClamAVBenchmar.cs` before running this step. 
 
 ```
 dotnet build -c Release
@@ -208,14 +201,14 @@ docker exec clamav-container /entrypoint.sh --benchmark
 mountFiles/
 ├── cleanFile.txt (clean file)
 ├── eicar.com (virus file)
-├── Car Photos (contains 12 files - no virus)
-├── files/ (contains 10 files - 1 virus)
-└── files2/ (contains 18 files - 1 virus)
+├── Car Photos (contains 6 files - no virus)
+├── files/ (contains 7 files - 1 virus)
+└── files2/ (contains 7 files - 1 virus)
 
 ```
 ```sh
 dotnet build -c Release
-docker exec clamav-container /entrypoint.sh --benchmark
+dotnet exec ./bin/Release/net8.0/ClamAVApi.dll --benchmark
 ```
 
 The benchmark compares scanning an entire directory (**ScanEntireDirectory**) versus scanning each file individually (**ScanEachFileIndividually**)
