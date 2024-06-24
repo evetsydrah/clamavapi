@@ -207,7 +207,7 @@ docker exec clamav-container /entrypoint.sh --benchmark
 ```scss
 mountFiles/
 ├── cleanFile.txt (clean file)
-├── euicar.com (virus file)
+├── eicar.com (virus file)
 ├── Car Photos (contains 12 files - no virus)
 ├── files/ (contains 10 files - 1 virus)
 └── files2/ (contains 18 files - 1 virus)
