@@ -1,14 +1,30 @@
-# ClamAV API
+# ClamAV .NET API with clamd Integration
 
-This project provides an API for running ClamAV virus scans on a specified directory. The API is built using ASP.NET Core and runs inside a Docker container. The ClamAV command-line tool is used to perform the virus scans.
-To clone the project:
+## Overview
+
+This project provides an API for running ClamAV virus scans on a specified directory or file. The API is built using ASP.NET Core and runs inside a Docker container. The ClamAV command-line tool `clamdscan` is used to perform the virus scans, leveraging the ClamD daemon for efficient and faster scanning.
+
+## Prerequisites
+
+- Docker installed on your machine
+- .NET SDK installed on your machine
+
+## Setup
+
+### Clone the Project
+
 ```sh
 git clone git@github.com:kevwu-creatingbugs/clamavapi.git
 ```
+
 ## Project Structure
 
 - **Program.cs**: Defines the API endpoints and logic for running ClamAV scans.
-- **Dockerfile**: Builds the Docker image for the API, including the installation of ClamAV.
+- **Dockerfile**: Builds the Docker image for the API, including the installation of ClamAV and clamd.
+- **ClamAVBenchmark.cs**: Contains benchmark tests comparing directory scanning versus individual file scanning.
+- **entrypoint.sh**: Entry point script for the Docker container to start the ClamAV daemon and run benchmarks.
+- **clamd.conf**: Configuration file for ClamAV daemon.
+- **freshclam.conf**: Configuration file for FreshClam, the automatic database update tool for ClamAV.
 
 ## Prerequisites
 
@@ -22,137 +38,110 @@ To build and run the Docker container, follow these steps:
 1. **Build the Docker image:**
 
    ```sh
-   docker build -t clamav-api .
+    docker build -t clamav-api .
     ```
 2. **Build the Docker container**
     ```sh
-    docker run -d -p 8080:8080 -v /path/to/scan/on/host:/data --name clamav-api clamav-api
+    docker run -d -p 8080:8080 -v /path/to/scan/on/host:/data --name clamav-container clamav-api
     ```
     Replace /path/to/scan/on/host with the actual directory on your host machine that you want to scan.
 
 
 ## API Endpoints
-### Scan Directory
+### Scan Directory or File
 - URL: /scan
-
-- Method: POST
-
-- Content-Type: application/json
-
-- Request Body for Directory:
-    ```json
-    {
-        "Path": "/data",
-        "IsDirectory": true
-    }
-    ```
-- Request Body for file
-    ```json
-    {
-        "Path": "/data/file1.txt",
-        "IsDirectory": false
-    }
-    ```
-    The Path field specifies the path to the directory or file to be scanned. This path should be within the /data directory, which is mapped from the host machine. The IsDirectory field specifies whether the path is a directory or a single file.
-
+- Method: GET
+#### Query Parameter
+filePath: The path to the file or directory to be scanned within the `/data` directory. Here the `/data` directory is the directory inside the container with the mounted files. 
 
 ### Example Request
 To test the endpoint, you can use `curl`:
 
 #### For Directory:
-```
-curl -X POST "http://localhost:8080/scan" \
-     -H "Content-Type: application/json" \
-     -d "{\"Path\":\"/data\",  \"IsDirectory\":true}"
+```sh
+curl "http://localhost:8080/scan?filePath=/data"
 ```
 #### For Single File:
-```
-curl -X POST "http://localhost:8080/scan" \
-     -H "Content-Type: application/json" \
-     -d "{\"Path\":\"/data/file1.txt\", \"IsDirectory\":false}"
+```sh
+curl "http://localhost:8080/scan?filePath=/data/file1.txt"
 ```
 
 ## Expected Response
+The original output of the `clamdscan <file/directory>` is:
+
+```
+/data/eicar.com: Eicar-Test-Signature FOUND
+
+----------- SCAN SUMMARY -----------
+Infected files: 1
+Time: 0.001 sec (0 m 0 s)
+Start Date: 2024:06:22 21:05:55
+End Date:   2024:06:22 21:05:55
+```
+```json
+{"/data/eicar.com: Eicar-Signature FOUND\n\n----------- SCAN SUMMARY -----------\nInfected files: 1\nTime: 0.001 sec (0 m 0 s)\nStart Date: 2024:06:22 21:05:55\nEnd Date:   2024:06:22 21:05:55\n}
+```
+
+The `clamdscan` command originally outputs only a plain text output whch shows the files detected with a  virus in the format `"filepath": "<virus> FOUND"`. 
+If no virus is detected while scanning the entire directory, it will output  `"filepath": "OK"`.
+
+The output JSON object is reformated with custom fields such as `Engine Version`, `Database Version`, `Infected Files`, `Total Files Scanned` to provide more information about the av scan.
+
 The response includes both the plain text output of the ClamAV scan and a structured JSON object.
 
-- **Response Format**:
+### **Response Format**:
+- **Fields**:
+    - **EngineVersion**: The version of the ClamAV engine.
+    - **DatabaseVersion**: The version of the ClamAV database.
+    - **ScanResult**: A dictionary containing the scan results for each file.
+    - **InfectedFiles**: The number of infected files found.
+    - **Time**: The time taken for the scan.
+    - **StartDate**: The start date and time of the scan.
+    - **EndDate**: The end date and time of the scan.
+
+
+####  **Response Examples**:
+- Virus Detected:
+```sh
+curl "http://localhost:8080/scan?filePath=/data"
+```
+```
+{
+    "engineVersion":"ClamAV 1.3.1/27315/Sun Jun 23 08:23:58 2024",
+    "databaseVersion":"62",
+    "scanResult":{
+        "/data/files/eicar.com":"Eicar-Signature FOUND",
+        "/data/eicar.com":"Eicar-Signature FOUND",
+        "/data/files2/eicar.com":"Eicar-Signature FOUND"
+    },
+    "totalScannedFiles":42,
+    "infectedFiles":3,
+    "time":"1.188 sec (0 m 1 s)",
+    "startDate":"2024:06:24 01:49:49",
+    "endDate":"2024:06:24 01:49:50"
+}
+```
+
+- No Virus Detected:
+
+
+```sh
+curl "http://localhost:8080/scan?filePath=/data/files/file1.txt"
+```
 
 ```
 {
-    "output": "/data/6.1-MB-scaled-1.jpg:Zone.Identifier: OK\n/data/file_example_JPG_10.1MB-scaled-1.jpg: OK\n/data/file_example_JPG_10.1MB-scaled-1.jpg:Zone.Identifier: OK\n/data/SampleDOCFile_5MB.doc: OK\n/data/6.1-MB-scaled-1.jpg: OK\n/data/SampleDOCFile_5MB.doc:Zone.Identifier: OK\n/data/file2.txt: OK\n/data/file1.txt: OK\n\n----------- SCAN SUMMARY -----------\nKnown viruses: 8694977\nEngine version: 1.0.3\nScanned directories: 1\nScanned files: 8\nInfected files: 0\nData scanned: 17.36 MB\nData read: 6.67 MB (ratio 2.60:1)\nTime: 12.885 sec (0 m 12 s)\nStart Date: 2024:06:19 14:03:39\nEnd Date:   2024:06:19 14:03:51\n",
-    "errors": "",
-    "exitCode": 0
+    "engineVersion":"ClamAV 1.3.1/27315/Sun Jun 23 08:23:58 2024",
+    "databaseVersion":"62",
+    "scanResult":{
+        "/data/files/file1.txt":"OK"
+    },
+    "totalScannedFiles":1,
+    "infectedFiles":0,
+    "time":"0.003 sec (0 m 0 s)",
+    "startDate":"2024:06:24 01:53:53",
+    "endDate":"2024:06:24 01:53:53"
 }
-```
-- **Fields**:
-    - **Output:** The raw output from the ClamAV scan, including any updates and scan results.
-    - **Errors:** Any errors encountered during the scan.
-    - **ExitCode:** The exit code from the ClamAV command. 
-        - Returns 1, if virus is detected. 
-        - Returns 0, if virus is not detected. 
-
-Response Examples:
-- No Virus Detected:
-```
-    {
-        "Outputs": {
-            "Result Scan": {
-                "/data/6.1-MB-scaled-1.jpg:Zone.Identifier": "OK",
-                "/data/file_example_JPG_10.1MB-scaled-1.jpg": "OK",
-                "/data/file_example_JPG_10.1MB-scaled-1.jpg:Zone.Identifier": "OK",
-                "/data/SampleDOCFile_5MB.doc": "OK",
-                "/data/6.1-MB-scaled-1.jpg": "OK",
-                "/data/SampleDOCFile_5MB.doc:Zone.Identifier": "OK",
-                "/data/file2.txt": "OK",
-                "/data/file1.txt": "OK"
-            }
-            "Known viruses": "8694977",
-            "Engine version": "1.0.3",
-            "Scanned directories": "1",
-            "Scanned files": 8,
-            "Infected files": 0,
-            "Data scanned": "17.36 MB",
-            "Data read": "6.67 MB (ratio 2.60:1)",
-            "Time": "12.885 sec (0 m 12 s)",
-            "Start Date": "2024:06:19 14:03:39",
-            "End Date": "2024:06:19 14:03:51",
-        },
-        "Errors": "",
-        "ExitCode": 0
-    }
-```
-
-
-- Virus Detected:
-
-
-```
-    {
-        "Outputs": {
-            "Result Scan": {
-                "/data/6.1-MB-scaled-1.jpg:Zone.Identifier": "OK",
-                "/data/file_example_JPG_10.1MB-scaled-1.jpg": "OK",
-                "/data/file_example_JPG_10.1MB-scaled-1.jpg:Zone.Identifier": "OK",
-                "/data/SampleDOCFile_5MB.doc": "OK",
-                "/data/6.1-MB-scaled-1.jpg": "OK",
-                "/data/SampleDOCFile_5MB.doc:Zone.Identifier": "Eicar-Test-Signature FOUND",
-                "/data/file2.txt": "OK",
-                "/data/file1.txt": "OK"
-            }
-            "Known viruses": "8694977",
-            "Engine version": "1.0.3",
-            "Scanned directories": "1",
-            "Scanned files": 8,
-            "Infected files": 0,
-            "Data scanned": "17.36 MB",
-            "Data read": "6.67 MB (ratio 2.60:1)",
-            "Time": "12.885 sec (0 m 12 s)",
-            "Start Date": "2024:06:19 14:03:39",
-            "End Date": "2024:06:19 14:03:51",
-        },
-        "Errors": "",
-        "ExitCode": 0
-    }
 ```
 
 ## Development and Testing
@@ -189,22 +178,18 @@ dotnet build
 3. Run the application.
 
 ```sh
-dotnet run <filepath/directory>
+dotnet run
 ```
 
-If you are running the application locally without Docker, use the following commands instead:
+## Example Requests for Local Run
 
 #### For Directory:
-```
-curl -X POST "http://localhost:5093/scan" \
-     -H "Content-Type: application/json" \
-     -d "{\"Path\":\"/data\",  \"IsDirectory\":true}"
+```sh
+curl "http://localhost:5093/scan?filePath=/data"
 ```
 #### For Single File:
-```
-curl -X POST "http://localhost:5093/scan" \
-     -H "Content-Type: application/json" \
-     -d "{\"Path\":\"/data/file1.txt\", \"IsDirectory\":false}"
+```sh
+curl "http://localhost:5093/scan?filePath=/data/file1.txt"
 ```
 
 
@@ -214,12 +199,28 @@ To run benchmarks that compare scanning an entire directory versus scanning each
 
 Ensure the directory structure to be scanned is mounted properly:
 
+```
+dotnet build -c Release
+docker exec clamav-container /entrypoint.sh --benchmark
+```
+
 ```scss
 mountFiles/
-├── files/ (contains 9 files)
-└── files2/ (contains 17 files)
+├── cleanFile.txt (clean file)
+├── euicar.com (virus file)
+├── Car Photos (contains 12 files - no virus)
+├── files/ (contains 10 files - 1 virus)
+└── files2/ (contains 18 files - 1 virus)
+
 ```
 ```sh
 dotnet build -c Release
-dotnet run -c Release -- --benchmark
+docker exec clamav-container /entrypoint.sh --benchmark
 ```
+
+The benchmark compares scanning an entire directory (**ScanEntireDirectory**) versus scanning each file individually (**ScanEachFileIndividually**)
+
+| Method                   | Mean      | Error     | StdDev    |
+|------------------------- |----------:|----------:|----------:|
+| ScanEntireDirectory      |  38.31 ms |  0.752 ms |  1.357 ms |
+| ScanEachFileIndividually | 335.77 ms | 14.282 ms | 41.661 ms |

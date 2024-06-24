@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 8080
@@ -14,9 +14,11 @@ RUN dotnet build "ClamAVApi.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "ClamAVApi.csproj" -c Release -o /app/publish
 
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+COPY . .
 
 RUN apt-get update && apt-get install -y \
     clamav clamav-daemon clamav-freshclam \
@@ -41,26 +43,12 @@ RUN curl -L -o clamav.tar.gz https://www.clamav.net/downloads/production/clamav-
     mkdir build && cd build && \
     cmake .. && make && make install
 
-# Configure ClamAV
-RUN cp /usr/local/etc/clamd.conf.sample /usr/local/etc/clamd.conf && \
-    sed -i 's/^#LogFile \/tmp\/clamd.log/LogFile \/var\/log\/clamav\/clamd.log/' /usr/local/etc/clamd.conf && \
-    sed -i 's/^#PidFile \/run\/clamav\/clamd.pid/PidFile \/var\/run\/clamav\/clamd.pid/' /usr/local/etc/clamd.conf && \
-    sed -i 's/^#LocalSocket \/run\/clamav\/clamd.sock/LocalSocket \/var\/run\/clamav\/clamd.sock/' /usr/local/etc/clamd.conf && \
-    sed -i 's/^#DatabaseDirectory \/var\/lib\/clamav/DatabaseDirectory \/var\/lib\/clamav/' /usr/local/etc/clamd.conf && \
-    sed -i 's/^#TCPSocket 3310/TCPSocket 3310/' /usr/local/etc/clamd.conf && \
-    sed -i 's/^#TCPAddr localhost/TCPAddr 127.0.0.1/' /usr/local/etc/clamd.conf && \
-    sed -i '/^Example/d' /usr/local/etc/clamd.conf
+# Copy the configuration files into the container
+COPY clamd.conf /usr/local/etc/clamd.conf
+COPY freshclam.conf /usr/local/etc/freshclam.conf
 
-RUN cp /usr/local/etc/freshclam.conf.sample /usr/local/etc/freshclam.conf && \
-    sed -i 's/^#DatabaseDirectory \/var\/lib\/clamav/DatabaseDirectory \/var\/lib\/clamav/' /usr/local/etc/freshclam.conf && \
-    sed -i 's/^#UpdateLogFile \/var\/log\/clamav\/freshclam.log/UpdateLogFile \/var\/log\/clamav\/freshclam.log/' /usr/local/etc/freshclam.conf && \
-    sed -i 's/^#LogFileMaxSize 2M/LogFileMaxSize 2M/' /usr/local/etc/freshclam.conf && \
-    sed -i 's/^#LogTime yes/LogTime yes/' /usr/local/etc/freshclam.conf && \
-    sed -i 's/^#LogRotate yes/LogRotate yes/' /usr/local/etc/freshclam.conf && \
-    sed -i 's/^#Foreground yes/Foreground yes/' /usr/local/etc/freshclam.conf && \
-    sed -i 's/^#Debug yes/Debug yes/' /usr/local/etc/freshclam.conf && \
-    sed -i '/^Example/d' /usr/local/etc/freshclam.conf
-
+# Ensure the correct permissions are set for the configuration files
+RUN chmod 644 /usr/local/etc/clamd.conf /usr/local/etc/freshclam.conf
 
 RUN mkdir -p /usr/local/share/clamav && \
     mkdir -p /var/lib/clamav /var/run/clamav /var/log/clamav && \
@@ -69,6 +57,7 @@ RUN mkdir -p /usr/local/share/clamav && \
 # Update database before starting the service
 RUN freshclam
 
+# Create necessary directories for ClamAV
 RUN mkdir -p /var/lib/clamav /var/run/clamav /var/log/clamav && \
     chown -R clamav:clamav /var/lib/clamav /var/run/clamav /var/log/clamav
 

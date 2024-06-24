@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 
 public class ClamAVBenchmark
 {
-    private const string DirectoryPath = "/home/kevinwu/spikes/ClamAVApi/mountFiles";
+    private const string DirectoryPath = "/data";
 
     [Benchmark]
     public async Task ScanEntireDirectory()
     {
-        string arguments = $"-r {DirectoryPath}";
+        string arguments = $"--multiscan --fdpass {DirectoryPath}";
 
         var processInfo = new ProcessStartInfo
         {
-            FileName = "clamscan",
+            FileName = "clamdscan",
             Arguments = arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -53,11 +53,11 @@ public class ClamAVBenchmark
         var files = Directory.GetFiles(DirectoryPath, "*", SearchOption.AllDirectories);
         foreach (var file in files)
         {
-            string arguments = file;
+            string arguments = $"--fdpass {file}";
 
             var processInfo = new ProcessStartInfo
             {
-                FileName = "clamscan",
+                FileName = "clamdscan",
                 Arguments = arguments,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
