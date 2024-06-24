@@ -13,7 +13,16 @@ if (commandLineArgs.Contains("--benchmark"))
     return;
 }
 
-var builder = WebApplication.CreateBuilder(args); 
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ApplicationName = typeof(Program).Assembly.FullName,
+    ContentRootPath = AppContext.BaseDirectory,
+    WebRootPath = "wwwroot",
+    EnvironmentName = Environments.Production
+});
+builder.WebHost.UseUrls("http://0.0.0.0:5000");
+
 var app = builder.Build();
 
 app.MapGet("/scan", (string filePath) =>
