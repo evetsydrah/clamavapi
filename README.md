@@ -46,10 +46,14 @@ To build and run the Docker container, follow these steps:
     ```
     Replace **/path/to/scan/on/host** with the actual directory on your host machine that you want to scan.
 
-
 ### Note: 
 When you run the docker container, you will need to **wait a minute** for the initialisation of the daemon before running the `curl` commands to test the endpoint.
 
+To verify if your /path/to/scan/on/host is mounted correctly in the container:
+
+```sh
+docker exec -it clamav-container sh
+```
 
 ## API Endpoints
 ### Scan Directory or File
