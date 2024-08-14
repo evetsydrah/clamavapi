@@ -14,7 +14,7 @@ This project provides an API for running ClamAV virus scans on a specified direc
 ### Clone the Project
 
 ```sh
-git clone git@github.com:kevwu-creatingbugs/clamavapi.git
+git clone git@github.com:kevinjcwu/clamavapi.git
 ```
 
 ## Project Structure
